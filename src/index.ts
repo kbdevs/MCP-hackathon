@@ -1,6 +1,8 @@
 import { readdir, readFile, stat } from "node:fs/promises";
+import { createServer } from "node:http";
 import path from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
@@ -378,5 +380,68 @@ async function fetchDedalusContext(url: string): Promise<string> {
   ].join("\n");
 }
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+async function startStdioServer(): Promise<void> {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+async function startHttpServer(): Promise<void> {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  await server.connect(transport);
+
+  const host = process.env.HOST ?? "0.0.0.0";
+  const port = Number(process.env.PORT ?? "3000");
+
+  const httpServer = createServer(async (req, res) => {
+    const base = `http://${req.headers.host ?? `${host}:${port}`}`;
+    const url = new URL(req.url ?? "/", base);
+
+    if (url.pathname === "/" || url.pathname === "/health") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, name: "dedalus-developer-mcp" }));
+      return;
+    }
+
+    if (url.pathname !== "/mcp") {
+      res.writeHead(404, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Not found" }));
+      return;
+    }
+
+    if (!["GET", "POST", "DELETE"].includes(req.method ?? "")) {
+      res.writeHead(405, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "Method not allowed" }));
+      return;
+    }
+
+    try {
+      await transport.handleRequest(req, res);
+    } catch (error) {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          error: error instanceof Error ? error.message : "Request handling failed",
+        })
+      );
+    }
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    httpServer.once("error", reject);
+    httpServer.listen(port, host, () => {
+      process.stderr.write(`MCP server listening on http://${host}:${port}/mcp\n`);
+      resolve();
+    });
+  });
+}
+
+const transportMode = process.env.MCP_TRANSPORT ?? (process.env.PORT ? "http" : "stdio");
+
+if (transportMode === "http") {
+  await startHttpServer();
+} else {
+  await startStdioServer();
+}

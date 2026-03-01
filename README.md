@@ -19,6 +19,8 @@ bun run start
 
 The server uses stdio transport and is ready to be attached in any MCP-compatible client.
 
+For hosted platforms (like Dedalus), the server auto-switches to Streamable HTTP when `PORT` is set and serves MCP on `/mcp`.
+
 ## Example MCP client config
 
 ```json
@@ -37,3 +39,4 @@ The server uses stdio transport and is ready to be attached in any MCP-compatibl
 
 - This implementation avoids external API keys.
 - Keep repository root scoped to trusted codebases when calling tools.
+- Force transport with `MCP_TRANSPORT=stdio` or `MCP_TRANSPORT=http`.
