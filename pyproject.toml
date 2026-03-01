@@ -1,0 +1,13 @@
+[project]
+name = "mcp-hackathon"
+version = "0.2.0"
+description = "Dedalus MCP hackathon server using dedalus_mcp protocol"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "dedalus-mcp>=0.2.0",
+]
+
+[tool.uv]
+package = false
+dev-dependencies = []

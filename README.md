@@ -1,6 +1,6 @@
 # Dedalus Developer MCP Server
 
-A Bun + TypeScript MCP server tailored for hackathon developer workflows.
+A Python MCP server built with `dedalus_mcp` for Dedalus marketplace compatibility.
 
 ## What this server provides
 
@@ -12,14 +12,11 @@ A Bun + TypeScript MCP server tailored for hackathon developer workflows.
 ## Quick start
 
 ```bash
-bun install
-bun run check
-bun run start
+uv sync
+uv run python main.py
 ```
 
-The server uses stdio transport and is ready to be attached in any MCP-compatible client.
-
-For hosted platforms (like Dedalus), the server auto-switches to Streamable HTTP when `PORT` is set and serves MCP on `/mcp`.
+By default it serves MCP at `http://127.0.0.1:8000/mcp`.
 
 ## Example MCP client config
 
@@ -27,8 +24,8 @@ For hosted platforms (like Dedalus), the server auto-switches to Streamable HTTP
 {
   "mcpServers": {
     "dedalus-developer": {
-      "command": "bun",
-      "args": ["run", "src/index.ts"],
+      "command": "uv",
+      "args": ["run", "python", "main.py"],
       "cwd": "/absolute/path/to/dedalus-developer-mcp-server"
     }
   }
@@ -37,6 +34,5 @@ For hosted platforms (like Dedalus), the server auto-switches to Streamable HTTP
 
 ## Notes
 
-- This implementation avoids external API keys.
+- This implementation uses Dedalus MCP protocol primitives directly (`dedalus_mcp.MCPServer`).
 - Keep repository root scoped to trusted codebases when calling tools.
-- Force transport with `MCP_TRANSPORT=stdio` or `MCP_TRANSPORT=http`.
